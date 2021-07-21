@@ -3,11 +3,14 @@
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <cmath>
 
 constexpr double MY_PI = 3.1415926;
 
+// 默认摄像机坐标系与世界坐标系方向相同？
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
+    // 单位矩阵
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
@@ -26,6 +29,10 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
+    Eigen::Matrix4f rotate;
+    double rotation = rotation_angle * MY_PI / 180;
+    rotate << cos(rotation), -sin(rotation), 0, 0, sin(rotation), cos(rotation), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+    model = rotate * model;
 
     return model;
 }
@@ -34,30 +41,45 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
     // Students will implement this function
-
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
     // Then return it.
+    // 正交变换矩阵
+    Eigen::Matrix4f orth1; // 先平移
+    Eigen::Matrix4f orth2; // 再缩放
+    // 透视->正交矩阵
+    Eigen::Matrix4f pertoorth;
+    pertoorth << zNear, 0, 0, 0, 0, zNear, 0, 0, 0, 0, zNear + zFar, -(zNear * zFar), 0, 0, 1, 0;
+    float halfEyeAngelRadian = eye_fov / 2.0 / 180.0 * MY_PI;
+    // zNear 一定是负的
+    float t = -zNear * std::tan(halfEyeAngelRadian); //top y轴的最高点
+    float r = t * aspect_ratio;                     //right x轴的最大值
+    float l = (-1) * r;                             //left x轴最小值
+    float b = (-1) * t;                             //bottom y轴的最大值
+    orth1 << 1, 0, 0, -(r + l) / 2, 0, 1, 0, -(t + b) / 2, 0, 0, 1, -(zNear + zFar) / 2, 0, 0, 0, 1;
+    orth2 << 2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, 2 / (zNear - zFar), 0, 0, 0, 0, 1;
+
+    projection = orth2 * orth1 * pertoorth * projection;
 
     return projection;
 }
 
-int main(int argc, const char** argv)
+int main(int argc, const char **argv)
 {
     float angle = 0;
     bool command_line = false;
     std::string filename = "output.png";
 
-    if (argc >= 3) {
+    if (argc >= 3)
+    {
         command_line = true;
         angle = std::stof(argv[2]); // -r by default
-        if (argc == 4) {
+        if (argc == 4)
+        {
             filename = std::string(argv[3]);
         }
-        else
-            return 0;
     }
 
     rst::rasterizer r(700, 700);
@@ -74,7 +96,8 @@ int main(int argc, const char** argv)
     int key = 0;
     int frame_count = 0;
 
-    if (command_line) {
+    if (command_line)
+    {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         r.set_model(get_model_matrix(angle));
@@ -90,7 +113,8 @@ int main(int argc, const char** argv)
         return 0;
     }
 
-    while (key != 27) {
+    while (key != 27)
+    {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         r.set_model(get_model_matrix(angle));
@@ -106,10 +130,12 @@ int main(int argc, const char** argv)
 
         std::cout << "frame count: " << frame_count++ << '\n';
 
-        if (key == 'a') {
+        if (key == 'a')
+        {
             angle += 10;
         }
-        else if (key == 'd') {
+        else if (key == 'd')
+        {
             angle -= 10;
         }
     }

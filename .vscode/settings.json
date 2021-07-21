@@ -2,6 +2,9 @@
     "files.associations": {
         "core": "cpp",
         "dense": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "eigen": "cpp",
+        "type_traits": "cpp",
+        "map": "cpp"
     }
 }
