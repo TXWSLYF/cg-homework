@@ -88,6 +88,7 @@ int main(int argc, const char **argv)
 
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
+    // 顶点顺序
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
     auto pos_id = r.load_positions(pos);
@@ -115,6 +116,7 @@ int main(int argc, const char **argv)
 
     while (key != 27)
     {
+        // 清空 color buffer 和 z buffer
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         r.set_model(get_model_matrix(angle));

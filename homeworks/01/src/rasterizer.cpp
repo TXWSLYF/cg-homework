@@ -156,6 +156,7 @@ void rst::rasterizer::draw(rst::pos_buf_id pos_buffer, rst::ind_buf_id ind_buffe
         };
 
         for (auto& vec : v) {
+            // vec.w() 获取齐次坐标
             vec /= vec.w();
         }
 

@@ -5,6 +5,8 @@
         "cmath": "cpp",
         "eigen": "cpp",
         "type_traits": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "vector": "cpp",
+        "limits": "cpp"
     }
 }
