@@ -164,6 +164,7 @@ void rst::rasterizer::draw(rst::pos_buf_id pos_buffer, rst::ind_buf_id ind_buffe
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
             vert.y() = 0.5*height*(vert.y()+1.0);
+            // http://games-cn.org/forums/topic/hw2%e7%9a%84%e7%96%91%e9%97%ae/
             vert.z() = vert.z() * f1 + f2;
         }
 
