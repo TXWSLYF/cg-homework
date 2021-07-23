@@ -22,7 +22,21 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
-Eigen::Matrix4f get_rotation(Vector3f axis, float angle) {}
+/**
+ * @description 计算绕任意过原点的轴的旋转变换矩阵
+ * @param axis 过原点向量
+ * @param angle 旋转角度
+ */
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
+{
+    Eigen::Matrix4f mat = Eigen::Matrix4f::Identity();
+
+    double rotation = angle * MY_PI / 180;
+    double axis_length = sqrt(pow(axis.x(), 2) + pow(axis.y(), 2) + pow(axis.z(), 2));
+    Vector3f axis_1 = (1 / axis_length) * axis;
+
+    return mat;
+}
 
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
@@ -57,9 +71,9 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     float halfEyeAngelRadian = eye_fov / 2.0 / 180.0 * MY_PI;
     // zNear 一定是负的
     float t = -zNear * std::tan(halfEyeAngelRadian); //top y轴的最高点
-    float r = t * aspect_ratio;                     //right x轴的最大值
-    float l = (-1) * r;                             //left x轴最小值
-    float b = (-1) * t;                             //bottom y轴的最大值
+    float r = t * aspect_ratio;                      //right x轴的最大值
+    float l = (-1) * r;                              //left x轴最小值
+    float b = (-1) * t;                              //bottom y轴的最大值
     orth1 << 1, 0, 0, -(r + l) / 2, 0, 1, 0, -(t + b) / 2, 0, 0, 1, -(zNear + zFar) / 2, 0, 0, 0, 1;
     orth2 << 2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, 2 / (zNear - zFar), 0, 0, 0, 0, 1;
 
