@@ -26,16 +26,27 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
  * @description 计算绕任意过原点的轴的旋转变换矩阵
  * @param axis 过原点向量
  * @param angle 旋转角度
+ * 罗德里格斯旋转公式矩阵表示
+ * https://baike.baidu.com/item/%E7%BD%97%E5%BE%B7%E9%87%8C%E6%A0%BC%E6%97%8B%E8%BD%AC%E5%85%AC%E5%BC%8F/18878562?fr=aladdin#3
  */
 Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
 {
-    Eigen::Matrix4f mat = Eigen::Matrix4f::Identity();
+    Eigen::Matrix3f mat1 = Eigen::Matrix3f::Identity();
 
     double rotation = angle * MY_PI / 180;
     double axis_length = sqrt(pow(axis.x(), 2) + pow(axis.y(), 2) + pow(axis.z(), 2));
     Vector3f axis_1 = (1 / axis_length) * axis;
 
-    return mat;
+    Eigen::Matrix3f mat2 = Eigen::Matrix3f::Identity();
+    Eigen::Matrix3f mat3 = Eigen::Matrix3f::Identity();
+    mat3 << 0, -axis_1.z(), axis_1.y(), axis_1.z(), 0, -axis_1.x(), -axis_1.y(), axis_1.x(), 0;
+    mat1 = mat2 * cos(rotation) + (1 - cos(rotation)) * axis_1 * (axis_1.transpose()) + sin(rotation) * mat3;
+
+    Eigen::Matrix4f rotate_martix = Eigen::Matrix4f::Identity();
+    // 子矩阵操作 https://blog.csdn.net/zhangqian_shai/article/details/101756145
+	rotate_martix.block(0, 0, 3, 3) = mat1;
+
+    return rotate_martix;
 }
 
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
@@ -100,7 +111,7 @@ int main(int argc, const char **argv)
 
     rst::rasterizer r(700, 700);
 
-    Eigen::Vector3f eye_pos = {0, 0, 5};
+    Eigen::Vector3f eye_pos = {0, 0, 20};
 
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
@@ -130,12 +141,14 @@ int main(int argc, const char **argv)
         return 0;
     }
 
+    Vector3f axis = {1, 1, 1};
     while (key != 27)
     {
         // 清空 color buffer 和 z buffer
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
-        r.set_model(get_model_matrix(angle));
+        // r.set_model(get_model_matrix(angle));
+        r.set_model(get_rotation(axis, angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
