@@ -1,6 +1,7 @@
 #include "global.hpp"
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
+#include <math.h>
 
 using namespace Eigen;
 
@@ -15,6 +16,10 @@ int main()
               << v3.z() << '\n'
               << v3[2] << '\n'
               << v3 << std::endl;
+
+    std::cout << "------我是分隔线------" << std::endl;
+    std::cout << floorf(3.6) << std::endl;
+    std::cout << ceilf(3.3) << std::endl;
 
     return 0;
 }

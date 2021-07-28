@@ -40,7 +40,7 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 }
 
 
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {   
     auto p0 =  _v[0];
     auto p1 =  _v[1];
@@ -136,91 +136,30 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
-    auto v = t.toVector4();
+    auto v0 = t.v[0];
+    auto v1 = t.v[1];
+    auto v2 = t.v[2];
 
-	// bounding box
-	float min_x = std::min(v[0][0], std::min(v[1][0], v[2][0]));
-    float max_x = std::max(v[0][0], std::max(v[1][0], v[2][0]));
-	float min_y = std::min(v[0][1], std::min(v[1][1], v[2][1]));
-	float max_y = std::max(v[0][1], std::max(v[1][1], v[2][1]));
+    // 第一步：找到三角形的 2 维 bounding box
+    auto max_x = std::max(v0[0], std::max(v1[0], v2[0]));
+    auto min_x = std::min(v0[0], std::min(v1[0], v2[0]));
+    auto max_y = std::max(v0[1], std::max(v1[1], v2[1]));
+    auto min_y = std::min(v0[1], std::min(v1[1], v2[1]));
 
-	min_x = (int)std::floor(min_x);
-	max_x = (int)std::ceil(max_x);
-	min_y = (int)std::floor(min_y);
-	max_y = (int)std::ceil(max_y);
+    max_x = (int)ceilf(max_x);
+    max_y = (int)ceilf(max_y);
+    min_x = (int)floorf(min_x);
+    min_y = (int)floorf(min_y);
 
-	bool MSAA = false;
-	//MSAA 4X
-	if (MSAA) {
-		// 格子里的细分四个小点坐标
-		std::vector<Eigen::Vector2f> pos
-		{
-			{0.25,0.25},
-			{0.75,0.25},
-			{0.25,0.75},
-			{0.75,0.75},
-		};
-		for (int x = min_x; x <= max_x; x++) {
-			for (int y = min_y; y <= max_y; y++) {
-				// 记录最小深度
-				float minDepth = FLT_MAX;
-				// 四个小点中落入三角形中的点的个数
-				int count = 0;
-				// 对四个小点坐标进行判断 
-				for (int i = 0; i < 4; i++) {
-					// 小点是否在三角形内
-					if (insideTriangle((float)x + pos[i][0], (float)y + pos[i][1], t.v)) {
-						// 如果在，对深度z进行插值
-						auto tup = computeBarycentric2D((float)x + pos[i][0], (float)y + pos[i][1], t.v);
-						float alpha;
-						float beta;
-						float gamma;
-						std::tie(alpha, beta, gamma) = tup;
-						float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-						float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-						z_interpolated *= w_reciprocal;
-						minDepth = std::min(minDepth, z_interpolated);
-						count++;
-					}
-				}
-				if (count != 0) {
-					if (depth_buf[get_index(x, y)] > minDepth) {
-						Vector3f color = t.getColor() * count / 4.0;
-						Vector3f point(3);
-						point << (float)x, (float)y, minDepth;
-						// 替换深度
-						depth_buf[get_index(x, y)] = minDepth;
-						// 修改颜色
-						set_pixel(point, color);
-					}
-				}
-			}
-		}
-	}
-	else {
-		for (int x = min_x; x <= max_x; x++) {
-			for (int y = min_y; y <= max_y; y++) {
-				if (insideTriangle((float)x + 0.5, (float)y + 0.5, t.v)) {
-					auto tup = computeBarycentric2D((float)x + 0.5, (float)y + 0.5, t.v);
-					float alpha;
-					float beta;
-					float gamma;
-					std::tie(alpha, beta, gamma) = tup;
-					float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-					float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-					z_interpolated *= w_reciprocal;
-
-					if (depth_buf[get_index(x, y)] > z_interpolated) {
-						Vector3f color = t.getColor();
-						Vector3f point(3);
-						point << (float)x, (float)y, z_interpolated;
-						depth_buf[get_index(x, y)] = z_interpolated;
-						set_pixel(point, color);
-					}
-				}
-			}
-		}
-	}
+    // 第二步：遍历 bounding box 内的所有像素，然后使用像素中 心的屏幕空间坐标来检查中心点是否在三角形内。
+    for (int x = min_x; x <= max_x; x++) {
+        for (int y = min_y; y <= max_y; y++) {
+            if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
+                Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+                set_pixel(point, t.getColor());
+            }
+        }
+    }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
