@@ -112,6 +112,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
             vert.y() = 0.5*height*(vert.y()+1.0);
+            // 这里将 z 做了个转换，保证 z 越大，离摄像头越远
             vert.z() = vert.z() * f1 + f2;
         }
 
@@ -155,8 +156,23 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     for (int x = min_x; x <= max_x; x++) {
         for (int y = min_y; y <= max_y; y++) {
             if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
-                Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
-                set_pixel(point, t.getColor());
+                auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
+                auto c1 = std::get<0>(temp);
+                auto c2 = std::get<1>(temp);
+                auto c3 = std::get<2>(temp);
+
+                // 计算采样点深度插值
+                auto z = c1 * t.v[0].z() + c2 * t.v[1].z() + c3 * t.v[2].z();
+
+                if (z < depth_buf[get_index(x, y)]) {
+                    Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+
+                    // 计算颜色插值
+                    auto color = c1 * t.getColor(0) + c2 * t.getColor(1) + c3 * t.getColor(2);
+
+                    set_pixel(point, color);
+                    depth_buf[get_index(x, y)] = z;
+                }
             }
         }
     }
