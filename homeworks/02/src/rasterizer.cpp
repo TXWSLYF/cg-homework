@@ -152,26 +152,66 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     min_x = (int)floorf(min_x);
     min_y = (int)floorf(min_y);
 
-    // 第二步：遍历 bounding box 内的所有像素，然后使用像素中 心的屏幕空间坐标来检查中心点是否在三角形内。
-    for (int x = min_x; x <= max_x; x++) {
-        for (int y = min_y; y <= max_y; y++) {
-            if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
-                auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
-                auto c1 = std::get<0>(temp);
-                auto c2 = std::get<1>(temp);
-                auto c3 = std::get<2>(temp);
+    bool MSAA = true;
 
-                // 计算采样点深度插值
-                auto z = c1 * t.v[0].z() + c2 * t.v[1].z() + c3 * t.v[2].z();
+    if (MSAA) {
+        for (int x = min_x; x <= max_x; x++) {
+            for (int y = min_y; y <= max_y; y++) {
+                int count = 0;
 
-                if (z < depth_buf[get_index(x, y)]) {
-                    Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+                // 2 * 2 采样
+                for (float a = (float)x + 0.25; a < x + 1; a = a + 0.5) {
+                    for (float b = (float)y + 0.25; b < y + 1; b = b + 0.5) {
+                        if (insideTriangle(a, b, t.v)) {
+                            count = count + 1;
+                        };
+                    }
+                }
 
-                    // 计算颜色插值
-                    auto color = c1 * t.getColor(0) + c2 * t.getColor(1) + c3 * t.getColor(2);
+                if (count > 0) {
+                    auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
+                    auto c1 = std::get<0>(temp);
+                    auto c2 = std::get<1>(temp);
+                    auto c3 = std::get<2>(temp);
 
-                    set_pixel(point, color);
-                    depth_buf[get_index(x, y)] = z;
+                    // 计算采样点深度插值
+                    auto z = c1 * t.v[0].z() + c2 * t.v[1].z() + c3 * t.v[2].z();
+                    if (z < depth_buf[get_index(x, y)]) {
+                        Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+
+                        // 计算颜色插值
+                        auto color = ((c1 * t.getColor(0) + c2 * t.getColor(1) + c3 * t.getColor(2)) * count) / 4.0;
+                        
+
+                        set_pixel(point, color);
+                        depth_buf[get_index(x, y)] = z;
+                    }
+                }
+
+            }
+        }
+    } else {
+        // 第二步：遍历 bounding box 内的所有像素，然后使用像素中 心的屏幕空间坐标来检查中心点是否在三角形内。
+        for (int x = min_x; x <= max_x; x++) {
+            for (int y = min_y; y <= max_y; y++) {
+                if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
+                    auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
+                    auto c1 = std::get<0>(temp);
+                    auto c2 = std::get<1>(temp);
+                    auto c3 = std::get<2>(temp);
+
+                    // 计算采样点深度插值
+                    auto z = c1 * t.v[0].z() + c2 * t.v[1].z() + c3 * t.v[2].z();
+
+                    if (z < depth_buf[get_index(x, y)]) {
+                        Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+
+                        // 计算颜色插值
+                        auto color = c1 * t.getColor(0) + c2 * t.getColor(1) + c3 * t.getColor(2);
+
+                        set_pixel(point, color);
+                        depth_buf[get_index(x, y)] = z;
+                    }
                 }
             }
         }
