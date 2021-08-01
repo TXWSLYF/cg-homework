@@ -300,15 +300,15 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
 
                     // 计算颜色插值
                     auto interpolated_color = c1 * t.color[0] + c2 * t.color[1] + c3 * t.color[2];
-                    // auto interpolated_normal = c1 * t.normal[0] + c2 * t.normal[1] + c3 * t.normal[2];
-                    // auto interpolated_texcoords = c1 * t.tex_coords[0] + c2 * t.tex_coords[1] + c3 * t.tex_coords[2];
-                    // auto interpolated_shadingcoords = c1 * view_pos[0] + c2 * view_pos[1] + c3 * view_pos[2];
+                    auto interpolated_normal = c1 * t.normal[0] + c2 * t.normal[1] + c3 * t.normal[2];
+                    auto interpolated_texcoords = c1 * t.tex_coords[0] + c2 * t.tex_coords[1] + c3 * t.tex_coords[2];
+                    auto interpolated_shadingcoords = c1 * view_pos[0] + c2 * view_pos[1] + c3 * view_pos[2];
 
-                    // fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, nullptr);
-                    // payload.view_pos = interpolated_shadingcoords;
-                    // auto pixel_color = fragment_shader(payload);
+                    fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    auto pixel_color = fragment_shader(payload);
 
-                    set_pixel(point, interpolated_color * 255.0);
+                    set_pixel(point, pixel_color);
                     depth_buf[get_index(x, y)] = z;
                 }
             }
