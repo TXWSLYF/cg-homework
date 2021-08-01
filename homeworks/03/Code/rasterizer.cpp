@@ -7,6 +7,7 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <array>
+#include <iostream>
 
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
 {
@@ -284,6 +285,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
         {
             if (insideTriangle(x + 0.5, y + 0.5, t.v))
             {
+                // 计算重心坐标
                 auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
                 auto c1 = std::get<0>(temp);
                 auto c2 = std::get<1>(temp);
@@ -297,9 +299,16 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
                     Eigen::Vector2i point = Eigen::Vector2i(x, y);
 
                     // 计算颜色插值
-                    auto color = c1 * t.color[0] + c2 * t.color[1] + c3 * t.color[2];
+                    auto interpolated_color = c1 * t.color[0] + c2 * t.color[1] + c3 * t.color[2];
+                    // auto interpolated_normal = c1 * t.normal[0] + c2 * t.normal[1] + c3 * t.normal[2];
+                    // auto interpolated_texcoords = c1 * t.tex_coords[0] + c2 * t.tex_coords[1] + c3 * t.tex_coords[2];
+                    // auto interpolated_shadingcoords = c1 * view_pos[0] + c2 * view_pos[1] + c3 * view_pos[2];
 
-                    set_pixel(point, color);
+                    // fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, nullptr);
+                    // payload.view_pos = interpolated_shadingcoords;
+                    // auto pixel_color = fragment_shader(payload);
+
+                    set_pixel(point, interpolated_color * 255.0);
                     depth_buf[get_index(x, y)] = z;
                 }
             }
