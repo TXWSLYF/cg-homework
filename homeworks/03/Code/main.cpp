@@ -57,7 +57,10 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
     Eigen::Matrix4f orth2; // 再缩放
     // 透视->正交矩阵
     Eigen::Matrix4f pertoorth;
-    pertoorth << zNear, 0, 0, 0, 0, zNear, 0, 0, 0, 0, zNear + zFar, -(zNear * zFar), 0, 0, 1, 0;
+    pertoorth << zNear, 0, 0, 0,
+        0, zNear, 0, 0,
+        0, 0, zNear + zFar, -(zNear * zFar),
+        0, 0, 1, 0;
 
     float halfEyeAngelRadian = eye_fov / 2.0 / 180.0 * MY_PI;
     // zNear 一定是负的
@@ -65,10 +68,16 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
     float r = t * aspect_ratio;                      //right x轴的最大值
     float l = (-1) * r;                              //left x轴最小值
     float b = (-1) * t;                              //bottom y轴的最大值
-    orth1 << 1, 0, 0, -(r + l) / 2, 0, 1, 0, -(t + b) / 2, 0, 0, 1, -(zNear + zFar) / 2, 0, 0, 0, 1;
-    orth2 << 2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, 2 / (zNear - zFar), 0, 0, 0, 0, 1;
+    orth1 << 1, 0, 0, -(r + l) / 2,
+        0, 1, 0, -(t + b) / 2,
+        0, 0, 1, -(zNear + zFar) / 2,
+        0, 0, 0, 1;
+    orth2 << 2 / (r - l), 0, 0, 0,
+        0, 2 / (t - b), 0, 0,
+        0, 0, 2 / (zNear - zFar), 0,
+        0, 0, 0, 1;
 
-    projection = orth2 * orth1 * pertoorth * projection;
+    projection = orth2 * orth1 * pertoorth;
 
     return projection;
 }
@@ -331,7 +340,7 @@ int main(int argc, const char **argv)
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45.0, 1, -0.1, -50));
 
         r.draw(TriangleList);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());

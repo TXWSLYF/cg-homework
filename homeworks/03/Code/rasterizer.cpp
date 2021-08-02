@@ -221,7 +221,6 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList)
         {
             vert.x() = 0.5 * width * (vert.x() + 1.0);
             vert.y() = 0.5 * height * (vert.y() + 1.0);
-            vert.z() = vert.z() * f1 + f2;
         }
 
         for (int i = 0; i < 3; ++i)
@@ -292,9 +291,9 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
                 auto gamma = std::get<2>(temp);
 
                 // 计算采样点深度插值
-                auto z = alpha * t.v[0].z() + beta * t.v[1].z() + gamma * t.v[2].z();
+                auto z = 1 / (alpha / view_pos[0].z() + beta / view_pos[1].z() + gamma / view_pos[2].z());
 
-                if (z < depth_buf[get_index(x, y)])
+                if (z > depth_buf[get_index(x, y)])
                 {
                     Eigen::Vector2i point = Eigen::Vector2i(x, y);
 
@@ -314,6 +313,9 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
             }
         }
     }
+    // http://games-cn.org/forums/topic/zhongxinzuobiaochazhishuxingwenti/
+    // http://games-cn.org/forums/topic/guanyuzuoye2hezuoye3zhongz-bufferdewenti/
+
     // TODO: From your HW3, get the triangle rasterization code.
     // TODO: Inside your rasterization loop:
     //    * v[i].w() is the vertex view space depth value z.
@@ -361,7 +363,7 @@ void rst::rasterizer::clear(rst::Buffers buff)
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(depth_buf.begin(), depth_buf.end(), -1 * std::numeric_limits<float>::infinity());
     }
 }
 
