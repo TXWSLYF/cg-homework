@@ -287,22 +287,22 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
             {
                 // 计算重心坐标
                 auto temp = computeBarycentric2D(x + 0.5, y + 0.5, t.v);
-                auto c1 = std::get<0>(temp);
-                auto c2 = std::get<1>(temp);
-                auto c3 = std::get<2>(temp);
+                auto alpha = std::get<0>(temp);
+                auto beta = std::get<1>(temp);
+                auto gamma = std::get<2>(temp);
 
                 // 计算采样点深度插值
-                auto z = c1 * t.v[0].z() + c2 * t.v[1].z() + c3 * t.v[2].z();
+                auto z = alpha * t.v[0].z() + beta * t.v[1].z() + gamma * t.v[2].z();
 
                 if (z < depth_buf[get_index(x, y)])
                 {
                     Eigen::Vector2i point = Eigen::Vector2i(x, y);
 
                     // 计算颜色插值
-                    auto interpolated_color = c1 * t.color[0] + c2 * t.color[1] + c3 * t.color[2];
-                    auto interpolated_normal = c1 * t.normal[0] + c2 * t.normal[1] + c3 * t.normal[2];
-                    auto interpolated_texcoords = c1 * t.tex_coords[0] + c2 * t.tex_coords[1] + c3 * t.tex_coords[2];
-                    auto interpolated_shadingcoords = c1 * view_pos[0] + c2 * view_pos[1] + c3 * view_pos[2];
+                    auto interpolated_color = alpha * t.color[0] + beta * t.color[1] + gamma * t.color[2];
+                    auto interpolated_normal = alpha * t.normal[0] + beta * t.normal[1] + gamma * t.normal[2];
+                    auto interpolated_texcoords = alpha * t.tex_coords[0] + beta * t.tex_coords[1] + gamma * t.tex_coords[2];
+                    auto interpolated_shadingcoords = alpha * view_pos[0] + beta * view_pos[1] + gamma * view_pos[2];
 
                     fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, nullptr);
                     payload.view_pos = interpolated_shadingcoords;
@@ -320,7 +320,8 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
     //    * Z is interpolated view space depth for the current pixel
     //    * zp is depth between zNear and zFar, used for z-buffer
 
-    // https://www.cnblogs.com/ArenAK/archive/2008/03/13/1103532.html(透视矫正插值)
+    // https://zhuanlan.zhihu.com/p/144331875
+    // (透视矫正插值)
     // float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
     // float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
     // zp *= Z;
