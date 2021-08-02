@@ -7,6 +7,7 @@
 #include "Shader.hpp"
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
+#include <math.h>
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
@@ -155,6 +156,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
 
     std::vector<light> lights = {l1, l2};
+    // 环境光强度
     Eigen::Vector3f amb_light_intensity{10, 10, 10};
     Eigen::Vector3f eye_pos{0, 0, 10};
 
@@ -169,6 +171,19 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
         // components are. Then, accumulate that result on the *result_color* object.
+        auto v = (eye_pos - point).normalized();
+        auto l = (light.position - point).normalized();
+        auto h = (v + l) / (v + l).norm();
+
+        auto temp1 = (light.intensity / (pow((point.x() - light.position.x()), 2) + pow((point.y() - light.position.y()), 2) + pow((point.z() - light.position.z()), 2)));
+
+        auto La = ka.cwiseProduct(amb_light_intensity);
+        auto Ld = kd.cwiseProduct(temp1) * std::max(0.0f, normal.normalized().dot((light.position - point).normalized()));
+        auto Ls = ks.cwiseProduct(temp1) * pow(std::max(0.0f, normal.normalized().dot(h)), 100.0f);
+
+        auto L = La + Ld + Ls;
+
+        result_color = result_color + L;
     }
 
     return result_color * 255.f;
@@ -291,7 +306,7 @@ int main(int argc, const char **argv)
     auto texture_path = "hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
     if (argc >= 2)
     {

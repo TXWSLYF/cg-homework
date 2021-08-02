@@ -21,5 +21,8 @@ int main()
     std::cout << floorf(3.6) << std::endl;
     std::cout << ceilf(3.3) << std::endl;
 
+    std::cout << "------我是分隔线------" << std::endl;
+    std::cout << v1.dot(v2) << std::endl;
+
     return 0;
 }
